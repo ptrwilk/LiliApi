@@ -1,13 +1,33 @@
-using Microsoft.AspNetCore.Http.HttpResults;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+                options.AddPolicy("MyPolicy",
+                    builder =>
+                    {
+                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+                    }
+                )
+            );
+
+
 var app = builder.Build();
+
+app.UseCors("MyPolicy");
 
 var isShutdownInProcess = false;
 
+app.MapPut("/shutdown/now", () =>
+{
+    Process.Start("shutdown", "/s");
+
+    return Results.Ok();
+});
+
 app.MapPut("/shutdown", (double seconds) =>
 {
-    if(!isShutdownInProcess)
+    if (!isShutdownInProcess)
     {
         isShutdownInProcess = true;
 
