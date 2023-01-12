@@ -12,24 +12,27 @@ builder.Services.AddCors(options =>
             );
 
 
+
 var app = builder.Build();
 
 app.UseCors("MyPolicy");
 
-var isShutdownInProcess = false;
+DateTime? shutdownPlannedAt = null;
 
 app.MapPut("/shutdown/now", () =>
 {
-    Process.Start("shutdown", "/s");
+    Process.Start("shutdown", "/s /t 60");
 
     return Results.Ok();
 });
 
 app.MapPut("/shutdown", (double seconds) =>
 {
-    if (!isShutdownInProcess)
+    if (!shutdownPlannedAt.HasValue)
     {
-        isShutdownInProcess = true;
+        Process.Start("shutdown", $"/s /t {seconds}");
+
+        shutdownPlannedAt = DateTime.Now.AddSeconds(seconds);
 
         return Results.Ok();
     }
@@ -41,9 +44,11 @@ app.MapPut("/shutdown", (double seconds) =>
 
 app.MapPut("/shutdown/stop", () =>
 {
-    if (isShutdownInProcess)
+    if (shutdownPlannedAt.HasValue)
     {
-        isShutdownInProcess = false;
+        Process.Start("shutdown", $"-a");
+
+        shutdownPlannedAt = null;
 
         return Results.Ok();
     }
@@ -55,9 +60,9 @@ app.MapPut("/shutdown/stop", () =>
 
 app.MapGet("/shutdown/state", () =>
 {
-    if (isShutdownInProcess)
+    if (shutdownPlannedAt.HasValue)
     {
-        return Results.Ok(12);
+        return Results.Ok((int)(shutdownPlannedAt.Value - DateTime.Now).TotalSeconds);
     }
     else
     {
