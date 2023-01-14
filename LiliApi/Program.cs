@@ -1,6 +1,14 @@
 using System.Diagnostics;
 
-var builder = WebApplication.CreateBuilder(args);
+var webApplicationOptions = new WebApplicationOptions()
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+    ApplicationName = Process.GetCurrentProcess().ProcessName
+};
+
+var builder = WebApplication.CreateBuilder(webApplicationOptions);
+builder.Host.UseWindowsService();
 
 builder.Services.AddCors(options =>
                 options.AddPolicy("MyPolicy",
@@ -10,7 +18,6 @@ builder.Services.AddCors(options =>
                     }
                 )
             );
-
 
 
 var app = builder.Build();
